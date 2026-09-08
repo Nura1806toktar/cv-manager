@@ -14,6 +14,8 @@ WORKDIR /var/www/html
 RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-RUN composer install --no-dev --optimize-autoloader
+
+ENV APP_ENV=prod
+RUN composer install --no-dev --optimize-autoloader --no-scripts
 
 EXPOSE 80
