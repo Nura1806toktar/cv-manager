@@ -1,0 +1,15 @@
+{% extends 'base.html.twig' %}
+{% block title %}Тіркелу{% endblock %}
+{% block body %}
+<div style="max-width:420px;margin:60px auto;font-family:sans-serif;">
+    <h1>Тіркелу</h1>
+    {{ form_start(registrationForm) }}
+        {{ form_row(registrationForm.email) }}
+        {{ form_row(registrationForm.firstName) }}
+        {{ form_row(registrationForm.lastName) }}
+        {{ form_row(registrationForm.plainPassword) }}
+        <button type="submit">Тіркелу</button>
+    {{ form_end(registrationForm) }}
+    <p><a href="{{ path('app_login') }}">Кіру</a></p>
+</div>
+{% endblock %}
