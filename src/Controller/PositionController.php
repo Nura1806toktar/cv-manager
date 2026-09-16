@@ -5,6 +5,8 @@ namespace App\Controller;
 use App\Entity\Position;
 use App\Entity\PositionAttribute;
 use App\Form\PositionFormType;
+use App\Entity\Cv;
+use App\Entity\User;
 use App\Repository\AttributeRepository;
 use App\Repository\PositionRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -39,6 +41,22 @@ final class PositionController extends AbstractController
             'positions' => $qb->getQuery()->getResult(),
             'search' => $search,
             'isStaff' => $isStaff,
+        ]);
+    }
+
+    #[Route('/{id}', name: 'position_show', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function show(Position $position, EntityManagerInterface $em): Response
+    {
+        $user = $this->getUser();
+        $existingCv = null;
+
+        if ($user instanceof User) {
+            $existingCv = $em->getRepository(Cv::class)->findOneBy(['user' => $user, 'position' => $position]);
+        }
+
+        return $this->render('position/show.html.twig', [
+            'position' => $position,
+            'existingCv' => $existingCv,
         ]);
     }
 

@@ -1,0 +1,123 @@
+{% extends 'base.html.twig' %}
+{% block title %}CV — {{ cv.position.title }}{% endblock %}
+{% block body %}
+<div style="max-width:800px;margin:40px auto;font-family:sans-serif;">
+    <h1>{{ cv.position.title }}</h1>
+    <p>Кандидат: {{ cv.user.firstName }} {{ cv.user.lastName }} | Статус: <strong>{{ cv.status.value }}</strong></p>
+
+    {% for message in app.flashes('success') %}<div style="color:green;">{{ message }}</div>{% endfor %}
+    {% for message in app.flashes('error') %}<div style="color:red;">{{ message }}</div>{% endfor %}
+
+    <div id="save-status" style="color:green;height:20px;"></div>
+
+    <h2>Атрибуттар</h2>
+    {% for row in attributes %}
+        <div class="cv-attr-row" data-attribute-id="{{ row.attribute.id }}" data-value-id="{{ row.valueId }}" data-version="{{ row.valueVersion ?? 0 }}"
+             style="margin-bottom:10px;padding:8px;border:1px solid #ddd;{% if row.isEmpty %}background:#fee;{% endif %}">
+            <strong>{{ row.attribute.name }}</strong>
+            {% if canEdit %}
+                <br>
+                {% if row.attribute.type.value == 'boolean' %}
+                    <input type="checkbox" data-field="value" {% if row.value %}checked{% endif %}>
+                {% elseif row.attribute.type.value == 'text' %}
+                    <textarea data-field="value" style="width:100%;">{{ row.value }}</textarea>
+                {% elseif row.attribute.type.value == 'select' %}
+                    <select data-field="value">
+                        <option value="">—</option>
+                        {% for opt in row.attribute.options %}
+                            <option value="{{ opt.value }}" {% if row.value == opt.value %}selected{% endif %}>{{ opt.value }}</option>
+                        {% endfor %}
+                    </select>
+                {% else %}
+                    <input type="text" data-field="value" value="{{ row.value }}" style="width:100%;">
+                {% endif %}
+            {% else %}
+                : {{ row.isEmpty ? '(бос)' : row.value }}
+            {% endif %}
+        </div>
+    {% endfor %}
+
+    <h2 style="margin-top:24px;">Жобалар</h2>
+    {% for project in projects %}
+        <div style="margin-bottom:12px;">
+            <strong>{{ project.name }}</strong> ({{ project.periodStart ? project.periodStart|date('Y-m') : '' }} — {{ project.periodEnd ? project.periodEnd|date('Y-m') : '' }})
+            <p>{{ project.description }}</p>
+        </div>
+    {% else %}
+        <p>Сәйкес жоба табылмады.</p>
+    {% endfor %}
+
+    {% if canPublish %}
+        <form method="post" action="{{ path('cv_publish', {id: cv.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('publish-cv-' ~ cv.id) }}">
+            <button type="submit">Publish (Рекрутерлерге көрсету)</button>
+        </form>
+    {% endif %}
+
+    {% if isOwner %}
+        <form method="post" action="{{ path('cv_delete', {id: cv.id}) }}" onsubmit="return confirm('CV-ді жоюды растайсыз ба?')" style="margin-top:8px;">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete-cv-' ~ cv.id) }}">
+            <button type="submit">CV-ді жою</button>
+        </form>
+    {% endif %}
+
+    <p style="margin-top:16px;"><a href="{{ path('position_show', {id: cv.position.id}) }}">← Позицияға оралу</a></p>
+</div>
+
+{% if canEdit %}
+<script>
+const statusEl = document.getElementById('save-status');
+let saveTimer = null;
+const pending = new Map();
+
+function scheduleSave(el) {
+    pending.set(el, true);
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(flushSaves, 7000);
+}
+
+function flushSaves() {
+    pending.forEach((_, el) => saveField(el));
+    pending.clear();
+}
+
+function saveField(el) {
+    const row = el.closest('.cv-attr-row');
+    const attributeId = row.dataset.attributeId;
+    const version = parseInt(row.dataset.version, 10) || 0;
+    let value = el.type === 'checkbox' ? el.checked : el.value;
+
+    const url = "{{ path('cv_attribute_autosave', {id: cv.id, attributeId: '__AID__'}) }}".replace('__AID__', attributeId);
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value, version }),
+    }).then(async res => {
+        if (res.status === 409) {
+            statusEl.style.color = 'red';
+            statusEl.textContent = 'Қайшылық болды, бет жаңартылады...';
+            setTimeout(() => location.reload(), 2000);
+            return;
+        }
+        const data = await res.json();
+        if (data.ok) {
+            row.dataset.version = data.version;
+            row.dataset.valueId = data.valueId;
+            row.style.background = (value === '' || value === null) ? '#fee' : '';
+            statusEl.style.color = 'green';
+            statusEl.textContent = 'Сақталды';
+            setTimeout(() => statusEl.textContent = '', 2000);
+        }
+    });
+}
+
+document.querySelectorAll('.cv-attr-row [data-field]').forEach(el => {
+    el.addEventListener('input', () => scheduleSave(el));
+    el.addEventListener('change', () => scheduleSave(el));
+});
+
+window.addEventListener('beforeunload', flushSaves);
+</script>
+{% endif %}
+{% endblock %}

@@ -51,7 +51,7 @@
             <tbody>
                 {% for position in positions %}
                 <tr>
-                    <td>{{ position.title }}</td>
+                    <td><a href="{{ path('position_show', {id: position.id}) }}">{{ position.title }}</a></td>
                     <td>{{ position.shortDescription }}</td>
                 </tr>
                 {% else %}

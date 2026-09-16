@@ -1,0 +1,25 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ position.title }}{% endblock %}
+{% block body %}
+<div style="max-width:700px;margin:40px auto;font-family:sans-serif;">
+    <h1>{{ position.title }}</h1>
+    <p>{{ position.shortDescription }}</p>
+    <p><em>{{ position.isPublic ? 'Public' : 'Restricted' }}</em></p>
+
+    {% if is_granted('ROLE_CANDIDATE') %}
+        {% if existingCv %}
+            <a href="{{ path('cv_show', {id: existingCv.id}) }}">Менің CV-ім →</a>
+        {% else %}
+            <form method="post" action="{{ path('cv_create', {positionId: position.id}) }}">
+                <button type="submit">CV жасау</button>
+            </form>
+        {% endif %}
+    {% endif %}
+
+    {% if is_granted('ROLE_RECRUITER') %}
+        <p><a href="{{ path('position_edit', {id: position.id}) }}">Позицияны өңдеу →</a></p>
+    {% endif %}
+
+    <p style="margin-top:16px;"><a href="{{ path('position_index') }}">← Тізімге оралу</a></p>
+</div>
+{% endblock %}
