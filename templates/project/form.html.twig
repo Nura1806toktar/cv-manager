@@ -1,0 +1,21 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ project ? 'Жобаны өңдеу' : 'Жаңа жоба' }}{% endblock %}
+{% block body %}
+<div style="max-width:500px;margin:40px auto;font-family:sans-serif;">
+    <h1>{{ project ? 'Жобаны өңдеу' : 'Жаңа жоба' }}</h1>
+    <form method="post">
+        <label>Атауы<br><input type="text" name="name" value="{{ project ? project.name : '' }}" style="width:100%;" required></label><br><br>
+        <label>Басталу күні<br><input type="date" name="periodStart" value="{{ project and project.periodStart ? project.periodStart|date('Y-m-d') : '' }}"></label><br><br>
+        <label>Аяқталу күні<br><input type="date" name="periodEnd" value="{{ project and project.periodEnd ? project.periodEnd|date('Y-m-d') : '' }}"></label><br><br>
+        <label>Сипаттама (Markdown)<br><textarea name="description" rows="6" style="width:100%;">{{ project ? project.description : '' }}</textarea></label><br><br>
+        <label>Технология тегтері (үтірмен бөліп жаз)<br>
+            <input type="text" name="tags" value="{% if project %}{% for t in project.tags %}{{ t.name }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}" style="width:100%;">
+        </label><br><br>
+        {% if project %}
+            <input type="hidden" name="_version" value="{{ project.version }}">
+        {% endif %}
+        <button type="submit">Сақтау</button>
+    </form>
+    <p><a href="{{ path('profile_index') }}">← Профильге оралу</a></p>
+</div>
+{% endblock %}

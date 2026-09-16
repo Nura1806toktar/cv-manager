@@ -28,9 +28,19 @@ class UserAttributeValue
     #[ORM\Column]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\Version]
+    #[ORM\Column(type: 'integer')]
+    private ?int $version = null;
+
     public function __construct()
     {
         $this->updatedAt = new \DateTimeImmutable();
+        $this->version = 1;
+    }
+
+    public function getVersion(): ?int
+    {
+        return $this->version;
     }
 
     public function getId(): ?int

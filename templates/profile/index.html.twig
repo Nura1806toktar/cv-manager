@@ -1,0 +1,138 @@
+{% extends 'base.html.twig' %}
+{% block title %}Менің профилім{% endblock %}
+{% block body %}
+<div style="max-width:800px;margin:40px auto;font-family:sans-serif;">
+    <h1>Менің профилім</h1>
+    <div id="save-status" style="color:green;height:20px;"></div>
+
+    <h2>Мен</h2>
+    <div id="me-section" data-version="{{ user.version }}">
+        <label>Аты<br><input type="text" data-field="firstName" value="{{ user.firstName }}" style="width:100%;"></label><br><br>
+        <label>Тегі<br><input type="text" data-field="lastName" value="{{ user.lastName }}" style="width:100%;"></label><br><br>
+        <label>Орналасқан жері<br><input type="text" data-field="location" value="{{ user.location }}" style="width:100%;"></label><br><br>
+        <label>Фото URL<br><input type="text" data-field="photoUrl" value="{{ user.photoUrl }}" style="width:100%;"></label>
+    </div>
+
+    <h2 style="margin-top:32px;">Ақпарат (атрибуттар)</h2>
+    <div id="info-section">
+        {% for v in values %}
+            <div class="attr-row" data-value-id="{{ v.id }}" data-version="{{ v.version }}" style="margin-bottom:12px;padding:8px;border:1px solid #ddd;{% if v.value is empty %}background:#fee;{% endif %}">
+                <strong>{{ v.attribute.name }}</strong> ({{ v.attribute.type.value }})<br>
+                {% if v.attribute.type.value == 'boolean' %}
+                    <input type="checkbox" data-field="value" {% if v.value %}checked{% endif %}>
+                {% elseif v.attribute.type.value == 'text' %}
+                    <textarea data-field="value" style="width:100%;">{{ v.value }}</textarea>
+                {% elseif v.attribute.type.value == 'select' %}
+                    <select data-field="value">
+                        <option value="">—</option>
+                        {% for opt in v.attribute.options %}
+                            <option value="{{ opt.value }}" {% if v.value == opt.value %}selected{% endif %}>{{ opt.value }}</option>
+                        {% endfor %}
+                    </select>
+                {% else %}
+                    <input type="text" data-field="value" value="{{ v.value }}" style="width:100%;">
+                {% endif %}
+                <form method="post" action="{{ path('profile_attribute_remove', {id: v.id}) }}" style="display:inline;">
+                    <button type="submit">Алып тастау</button>
+                </form>
+            </div>
+        {% else %}
+            <p>Атрибут тіркелмеген.</p>
+        {% endfor %}
+
+        <form method="post" action="{{ path('profile_attribute_add') }}">
+            <select name="attribute_id">
+                {% for attr in available %}
+                    <option value="{{ attr.id }}">{{ attr.name }} ({{ attr.category.value }})</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Атрибут қосу</button>
+        </form>
+    </div>
+
+    <h2 style="margin-top:32px;">Жобалар</h2>
+    <a href="{{ path('project_new') }}">+ Жаңа жоба</a>
+    <table border="1" cellpadding="8" style="width:100%;border-collapse:collapse;margin-top:8px;">
+        <thead><tr><th>Атауы</th><th>Кезеңі</th><th>Тегтер</th><th></th></tr></thead>
+        <tbody>
+        {% for project in projects %}
+            <tr>
+                <td><a href="{{ path('project_edit', {id: project.id}) }}">{{ project.name }}</a></td>
+                <td>{{ project.periodStart ? project.periodStart|date('Y-m') : '' }} — {{ project.periodEnd ? project.periodEnd|date('Y-m') : '' }}</td>
+                <td>{% for t in project.tags %}{{ t.name }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+                <td>
+                    <form method="post" action="{{ path('project_delete', {id: project.id}) }}" onsubmit="return confirm('Жоюды растайсыз ба?')">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete-project-' ~ project.id) }}">
+                        <button type="submit">Жою</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <h2 style="margin-top:32px;">CV-лерім</h2>
+    <p><a href="{{ path('position_index') }}">Позицияларды қарап, CV жасаңыз →</a></p>
+</div>
+
+<script>
+const statusEl = document.getElementById('save-status');
+let saveTimer = null;
+const pending = new Map();
+
+function scheduleSave(el, immediate) {
+    pending.set(el, true);
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(flushSaves, immediate ? 0 : 7000);
+}
+
+function flushSaves() {
+    pending.forEach((_, el) => saveField(el));
+    pending.clear();
+}
+
+function saveField(el) {
+    const container = el.closest('[data-version]');
+    const version = parseInt(container.dataset.version, 10);
+    const field = el.dataset.field;
+    let value = el.type === 'checkbox' ? el.checked : el.value;
+
+    let url, body;
+    if (container.id === 'me-section') {
+        url = "{{ path('profile_autosave_me') }}";
+        body = { field, value, version };
+    } else {
+        const valueId = container.dataset.valueId;
+        url = "{{ path('profile_attribute_autosave', {id: '__ID__'}) }}".replace('__ID__', valueId);
+        body = { value, version };
+    }
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    }).then(async res => {
+        if (res.status === 409) {
+            statusEl.style.color = 'red';
+            statusEl.textContent = 'Қайшылық: деректер басқа жерде өзгертілді. Бет жаңартылады...';
+            setTimeout(() => location.reload(), 2000);
+            return;
+        }
+        const data = await res.json();
+        if (data.ok) {
+            container.dataset.version = data.version;
+            statusEl.style.color = 'green';
+            statusEl.textContent = 'Сақталды';
+            setTimeout(() => statusEl.textContent = '', 2000);
+        }
+    });
+}
+
+document.querySelectorAll('#me-section [data-field], #info-section [data-field]').forEach(el => {
+    el.addEventListener('input', () => scheduleSave(el, false));
+    el.addEventListener('change', () => scheduleSave(el, false));
+});
+
+window.addEventListener('beforeunload', flushSaves);
+</script>
+{% endblock %}
