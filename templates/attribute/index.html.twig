@@ -1,0 +1,53 @@
+{% extends 'base.html.twig' %}
+{% block title %}Атрибуттар кітапханасы{% endblock %}
+{% block body %}
+<div style="max-width:900px;margin:40px auto;font-family:sans-serif;">
+    <h1>Атрибуттар кітапханасы</h1>
+
+    {% for message in app.flashes('success') %}<div style="color:green;">{{ message }}</div>{% endfor %}
+    {% for message in app.flashes('error') %}<div style="color:red;">{{ message }}</div>{% endfor %}
+
+    <form method="get" style="margin-bottom:16px;display:flex;gap:8px;">
+        <input type="text" name="q" placeholder="Атау бойынша іздеу..." value="{{ search }}">
+        <select name="category">
+            <option value="">Барлық категория</option>
+            {% for cat in categories %}
+                <option value="{{ cat.value }}" {% if selectedCategory == cat.value %}selected{% endif %}>{{ cat.value }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Сүзу</button>
+        <a href="{{ path('attribute_index') }}">Тазалау</a>
+    </form>
+
+    <form method="post" action="{{ path('attribute_bulk_delete') }}" id="bulk-form">
+        <input type="hidden" name="_token" value="{{ csrf_token('bulk-delete-attribute') }}">
+        <div style="margin-bottom:8px;display:flex;gap:8px;align-items:center;">
+            <a href="{{ path('attribute_new') }}">+ Жаңа атрибут</a>
+            <button type="submit" onclick="return confirm('Таңдалғандарды жоюды растайсыз ба?')">Таңдалғандарды жою</button>
+        </div>
+
+        <table border="1" cellpadding="8" style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" onclick="document.querySelectorAll('.row-check').forEach(c=>c.checked=this.checked)"></th>
+                    <th>Атау</th>
+                    <th>Категория</th>
+                    <th>Тип</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for attribute in attributes %}
+                <tr style="cursor:pointer;" onclick="if(event.target.type!=='checkbox') window.location='{{ path('attribute_edit', {id: attribute.id}) }}'">
+                    <td onclick="event.stopPropagation()"><input class="row-check" type="checkbox" name="ids[]" value="{{ attribute.id }}"></td>
+                    <td>{{ attribute.name }}</td>
+                    <td>{{ attribute.category.value }}</td>
+                    <td>{{ attribute.type.value }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4">Атрибуттар табылмады.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </form>
+</div>
+{% endblock %}

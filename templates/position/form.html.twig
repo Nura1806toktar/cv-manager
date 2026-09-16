@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ position ? 'Позицияны өңдеу' : 'Жаңа позиция' }}{% endblock %}
+{% block body %}
+<div style="max-width:500px;margin:40px auto;font-family:sans-serif;">
+    <h1>{{ position ? 'Позицияны өңдеу' : 'Жаңа позиция' }}</h1>
+    {{ form_start(form) }}
+        {{ form_row(form.title) }}
+        {{ form_row(form.shortDescription) }}
+        {{ form_row(form.isPublic) }}
+        {{ form_row(form.maxProjects) }}
+        {% if position %}
+            <input type="hidden" name="position[_version]" value="{{ position.version }}">
+        {% endif %}
+        <button type="submit">Сақтау</button>
+    {{ form_end(form) }}
+
+    {% if position %}
+        <p><a href="{{ path('position_attributes', {id: position.id}) }}">Атрибуттарды басқару →</a></p>
+        <form method="post" action="{{ path('position_duplicate', {id: position.id}) }}" style="margin-top:8px;">
+            <input type="hidden" name="_token" value="{{ csrf_token('duplicate-position') }}">
+            <button type="submit">Позицияны көшірмелеу (Duplicate)</button>
+        </form>
+    {% endif %}
+
+    <p><a href="{{ path('position_index') }}">← Тізімге оралу</a></p>
+</div>
+{% endblock %}

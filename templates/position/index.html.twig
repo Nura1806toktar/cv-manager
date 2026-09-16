@@ -1,0 +1,64 @@
+{% extends 'base.html.twig' %}
+{% block title %}Позициялар{% endblock %}
+{% block body %}
+<div style="max-width:900px;margin:40px auto;font-family:sans-serif;">
+    <h1>Позициялар</h1>
+
+    {% for message in app.flashes('success') %}<div style="color:green;">{{ message }}</div>{% endfor %}
+    {% for message in app.flashes('error') %}<div style="color:red;">{{ message }}</div>{% endfor %}
+
+    <form method="get" style="margin-bottom:16px;">
+        <input type="text" name="q" placeholder="Атау бойынша іздеу..." value="{{ search }}">
+        <button type="submit">Іздеу</button>
+    </form>
+
+    {% if isStaff %}
+    <form method="post" action="{{ path('position_bulk_delete') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('bulk-delete-position') }}">
+        <div style="margin-bottom:8px;display:flex;gap:8px;">
+            <a href="{{ path('position_new') }}">+ Жаңа позиция</a>
+            <button type="submit" onclick="return confirm('Таңдалғандарды жою?')">Таңдалғандарды жою</button>
+        </div>
+
+        <table border="1" cellpadding="8" style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" onclick="document.querySelectorAll('.row-check').forEach(c=>c.checked=this.checked)"></th>
+                    <th>Атауы</th>
+                    <th>Көрінуі</th>
+                    <th>Құрылған күні</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for position in positions %}
+                <tr style="cursor:pointer;" onclick="if(event.target.type!=='checkbox') window.location='{{ path('position_edit', {id: position.id}) }}'">
+                    <td onclick="event.stopPropagation()"><input class="row-check" type="checkbox" name="ids[]" value="{{ position.id }}"></td>
+                    <td>{{ position.title }}</td>
+                    <td>{{ position.isPublic ? 'Public' : 'Restricted' }}</td>
+                    <td>{{ position.createdAt ? position.createdAt|date('Y-m-d') : '' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4">Позиция табылмады.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </form>
+    {% else %}
+        <table border="1" cellpadding="8" style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr><th>Атауы</th><th>Сипаттама</th></tr>
+            </thead>
+            <tbody>
+                {% for position in positions %}
+                <tr>
+                    <td>{{ position.title }}</td>
+                    <td>{{ position.shortDescription }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="2">Позиция табылмады.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+{% endblock %}

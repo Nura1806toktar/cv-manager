@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ attribute ? 'Атрибутты өңдеу' : 'Жаңа атрибут' }}{% endblock %}
+{% block body %}
+<div style="max-width:500px;margin:40px auto;font-family:sans-serif;">
+    <h1>{{ attribute ? 'Атрибутты өңдеу' : 'Жаңа атрибут' }}</h1>
+    {{ form_start(form) }}
+        {{ form_row(form.name) }}
+        {{ form_row(form.category) }}
+        {{ form_row(form.type) }}
+        {{ form_row(form.description) }}
+        {% if attribute %}
+            <input type="hidden" name="attribute[_version]" value="{{ attribute.version }}">
+        {% endif %}
+        <button type="submit">Сақтау</button>
+    {{ form_end(form) }}
+    <p><a href="{{ path('attribute_index') }}">← Тізімге оралу</a></p>
+</div>
+{% endblock %}
